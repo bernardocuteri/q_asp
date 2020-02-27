@@ -13,6 +13,10 @@ Java, Maven
 
     $ java -jar target/qasp-0.1-jar-with-dependencies.jar *input_file*
 
+## Input format
+    
+Check *example.asp*
+
 ## For development purposes 
 
 Import as existing Maven project
