@@ -8,9 +8,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class Utilities {
 
+	private static final Logger LOGGER = Logger.getLogger(Utilities.class.getName());
+	
 	public static String runAndGetString(String command) {
 
 		StringBuilder sb = new StringBuilder();
@@ -56,7 +59,7 @@ public class Utilities {
 				try (final BufferedReader b = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
 					String errLine;
 					if ((errLine = b.readLine()) != null)
-						System.err.println(errLine);
+						LOGGER.log(QAsp.DEBUG_LEVEL,errLine);
 				} catch (final IOException e) {
 					e.printStackTrace();
 				}
