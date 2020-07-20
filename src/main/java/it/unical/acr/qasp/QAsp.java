@@ -98,6 +98,9 @@ public class QAsp {
 		if (args.length != 1) {
 			throw new IllegalArgumentException("Expected exactly one argument: a Q ASP input file");
 		}
+		if (!new File(args[0]).exists()) {
+			throw new IllegalArgumentException("File not found "+args[0]);
+		}
 		boolean result = new QAsp().solve(args[0]);
 		System.out.println(result ? "SAT" : "UNSAT");
 	}
