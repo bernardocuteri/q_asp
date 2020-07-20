@@ -1,10 +1,9 @@
 %@forall
-a | -a.
-b | -b.
+b(1).
+b(2).
+a(X) | -a(X) :- b(X).
 %@exists
-c:- a.
-c:- b.
-c:- d.
+c :- a(1).
 %@constraint
-:- not c.
+:- c.
 

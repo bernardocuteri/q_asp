@@ -37,9 +37,8 @@ public class QAsp {
 
 		File tempFile = Utilities.writeToTempFile(program);
 		// Run a shell command
-		String command = "./gringo --output=SMODELS " + tempFile;
-
-		return Utilities.runAndGetList(command);
+		String command = "%s --output=SMODELS " + tempFile;
+		return Utilities.executeBinaries(command, "gringo");
 	}
 
 	private Program readAspProgram(String filename) throws FileNotFoundException, ParseException {
@@ -60,11 +59,11 @@ public class QAsp {
 			p = readAspProgram(filename);
 		} catch (FileNotFoundException e) {
 			LOGGER.severe("Unable to find file " + filename);
-			System.exit(0);
+			System.exit(-1);
 		} catch (ParseException e) {
 			LOGGER.severe("Unable to parse file " + filename);
 			LOGGER.severe(e.toString());
-			System.exit(0);
+			System.exit(-1);
 		}
 
 		LOGGER.log(DEBUG_LEVEL, "Printing of parsed program:");
@@ -195,9 +194,7 @@ public class QAsp {
 				qcirProgram.addGateDefinition(new GateDefinition("phi_" + i, "and", clausesList));
 				qcirProgram.addQuantifiedLayer(vars, quantifier.substring(1));
 			}
-
 		}
-
 		// merge formulas together
 		for (int i = qp.getPrograms().size() - 2; i >= 0; i--) {
 			String current = "phi_" + i;
@@ -212,16 +209,14 @@ public class QAsp {
 				throw new IllegalArgumentException("invalid quantifier order (constraint must be the last)");
 			}
 		}
-
 		LOGGER.log(DEBUG_LEVEL, "\n" + qcirProgram.toString());
 		return solveQCIRProgram(qcirProgram);
-
 	}
 
 	private boolean solveQCIRProgram(QCIRProgram qcirProgram) {
 		File tempFile = Utilities.writeToTempFile(qcirProgram.toString());
-		String command = "./rareqs-nn-beta.sh " + tempFile;
-		List<String> output = Utilities.runAndGetList(command);
+		String command = "%s "+tempFile+" -read-qcir -write-gq | %s - -prenex -write-gq | %s -";
+		List<String> output = Utilities.executeBinaries(command, "fmla", "qcir-conv.py", "rareqs-nn");
 		String lastLine = output.get(output.size() - 1);
 		int result = Integer.parseInt(lastLine.substring(lastLine.length() - 1));
 		return result == 1;
@@ -232,7 +227,6 @@ public class QAsp {
 
 		Map<Integer, Integer> mappedVars = new HashMap<>();
 		// assuming also unknown vars are mapped to null strings in var2atom
-
 		for (ArrayList<Integer> clause : cnfProgram.getClauses()) {
 			for (int i = 0; i < clause.size(); i++) {
 				int varWithSign = clause.get(i);
@@ -271,8 +265,8 @@ public class QAsp {
 		File tempFile = Utilities.writeToTempFile(ground.toString());
 		LOGGER.log(DEBUG_LEVEL, "ground program transofrming to sat");
 		LOGGER.log(DEBUG_LEVEL, ground.toString());
-		String command = "cat " + tempFile + " | ./lpshift-1.4 | ./lp2normal-2.27 | ./lp2lp2-1.23 | ./lp2sat-1.24";
-		List<String> satProgram = Utilities.runAndGetList(command);
+		String command = "cat " + tempFile + " | %s | %s | %s | %s";
+		List<String> satProgram = Utilities.executeBinaries(command, "lpshift-1.4","lp2normal-2.27","lp2lp2-1.23", "lp2sat-1.24");
 		CNFProgramBuilder builder = new CNFProgramBuilder();
 		LOGGER.log(DEBUG_LEVEL, "sat formula");
 		for (String s : satProgram) {

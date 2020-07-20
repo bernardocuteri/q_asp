@@ -2,14 +2,20 @@
 A solver of ASP programs with quantifiers 
 
 ## Prerequisites
+Java
+
+## Running pre-built jar
+
+    $ java -jar qasp-0.1.jar *input_file*
+
+## Building Prerequisites
 Java, Maven
 
 ## Building the executable JAR:
 
-    $ mvn clean
-    $ mvn package
+    $ mvn clean && mvn package
 
-## Running 
+## Running output jar
 
     $ java -jar target/qasp-0.1-jar-with-dependencies.jar *input_file*
 
