@@ -100,6 +100,7 @@ public class QAsp implements Callable<Integer> {
 			System.exit(-1);
 		} catch (ParseException e) {
 			System.err.println("Unable to parse file " + filename);
+			System.err.println(e.toString());
 			LOGGER.severe(e.toString());
 			System.exit(-1);
 		}
