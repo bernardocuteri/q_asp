@@ -15,10 +15,6 @@ Java, Maven
 
     $ mvn clean && mvn package
 
-## Running output jar
-
-    $ java -jar target/qasp-0.1-jar-with-dependencies.jar *input_file*
-
 ## Input format
     
 Check *example.asp*

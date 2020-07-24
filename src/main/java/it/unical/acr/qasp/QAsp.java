@@ -206,6 +206,10 @@ public class QAsp implements Callable<Integer> {
 			// update qcir program
 			formulas.add(updateQcirProgram(qcirPB, allVars, i, quantifier, cnfProgram));
 		}
+		if(!qp.getQuantifiers().get(qp.getQuantifiers().size()-1).equals(CONSTRAINT)) {
+			System.err.println("Invalid input: the last quantifier must be "+CONSTRAINT+". Note that the constraint program can be empty though.");
+			System.exit(-1);
+		}
 		// merge formulas together
 		String previous = formulas.get(formulas.size() - 1);
 		for (int i = qp.getPrograms().size() - 2; i >= 0; i--) {
@@ -216,7 +220,8 @@ public class QAsp implements Callable<Integer> {
 			} else if (quantifier.equals(FORALL)) {
 				previous = qcirPB.addFormula(i, QCIRProgram.OR, Arrays.asList("-" + current, previous));
 			} else {
-				throw new IllegalArgumentException("invalid quantifier order (constraint must be the last)");
+				System.err.println("Invalid quantifier order (constraint must be the last)");
+				System.exit(-1);
 			}
 		}
 		qcirPB.setOutput(previous);
