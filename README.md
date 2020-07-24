@@ -7,6 +7,7 @@ Java, Python3
 ## Running pre-built jar
 
     $ java -jar qasp-0.1.jar *input_file*
+Use option -n to set the number of models in output of the most external program, if existentially quantified.
 
 ## Building Prerequisites
 Java, Maven
