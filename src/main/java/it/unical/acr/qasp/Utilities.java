@@ -17,6 +17,7 @@ import java.net.URL;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
@@ -92,10 +93,21 @@ public class Utilities {
 		return null;
 
 	}
+	
+	public static String getCommand(ShellCommand shellCommand) {
+		return String.format(shellCommand.getCommandTemplate(), Arrays.asList(shellCommand.getBinaries()));		
+	}
+	
+	public static List<String> executeBinaries(ShellCommand shellCommand, String ... files) {
+		String command = shellCommand.getCommandTemplate();
+		for(String file: files) 
+		{
+			command = command.replace(ShellCommand.FILE, file);
+		}
+		return executeBinaries(command, shellCommand.getBinaries());
+	}
 
-	public static List<String> executeBinaries(String commandTemplate, String... binaries) {
-
-		 
+	public static List<String> executeBinaries(String commandTemplate, String... binaries) {		 
 		List<File> resolvedBinaries = new ArrayList<>();
 		for (String binary : binaries) {			
 			try {

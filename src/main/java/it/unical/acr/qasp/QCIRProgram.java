@@ -4,51 +4,47 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class QCIRProgram {
+
+	public enum QCIRFormatType {
+		STANDARD, CLEANSED
+	}
 	
-	private List<List<String> > quantifiedVariables = new ArrayList<>();
-	private List<String> quantifiers = new ArrayList<>();;	
-	private List<GateDefinition> gateDefinitions = new ArrayList<>();;
-	
-	public QCIRProgram() {
+	public static final String OR = "or";
+	public static final String AND = "and";
+
+	private QCIRFormatType format;
+	private List<List<String>> quantifiedVariables = new ArrayList<>();
+	private List<String> quantifiers = new ArrayList<>();
+	private List<GateDefinition> gateDefinitions = new ArrayList<>();
+	private String output;
+
+	public QCIRProgram(QCIRFormatType format) {
 		super();
+		this.format = format;
+	}
+
+	public List<List<String>> getQuantifiedVariables() {
+		return quantifiedVariables;
+	}
+
+	public List<String> getQuantifiers() {
+		return quantifiers;
+	}
+
+	public List<GateDefinition> getGateDefinitions() {
+		return gateDefinitions;
 	}
 	
-	void addQuantifiedLayer(List<String> vars, String quantifier) {
-		quantifiedVariables.add(vars);
-		quantifiers.add(quantifier);
+	public QCIRFormatType getFormat() {
+		return format;
 	}
-	
-	void addGateDefinition(GateDefinition gd) {
-		gateDefinitions.add(gd);
+
+	public String getOutput() {
+		return output;
 	}
-	
-	
-	@Override
-	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		//use QCIR version 13
-		sb.append("#QCIR-13\n");
-		
-		//append quantifications
-		for(int i=0;i<quantifiers.size();i++) {
-			sb.append(quantifiers.get(i)+"(");
-			for(int j=0;j<quantifiedVariables.get(i).size();j++) {
-				if(j>0) {
-					sb.append(",");
-				}
-				sb.append(quantifiedVariables.get(i).get(j));
-			}
-			
-			sb.append(")\n");
-		}
-		
-		sb.append("output(psi_0)\n");
-		
-		for(GateDefinition gd: gateDefinitions) {
-			sb.append(gd.toString()+"\n");
-		}
-		
-		return sb.toString();
+
+	public void setOutput(String output) {
+		this.output = output;
 	}
 	
 	

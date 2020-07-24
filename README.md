@@ -2,7 +2,7 @@
 A solver of ASP programs with quantifiers 
 
 ## Prerequisites
-Java
+Java, Python3
 
 ## Running pre-built jar
 

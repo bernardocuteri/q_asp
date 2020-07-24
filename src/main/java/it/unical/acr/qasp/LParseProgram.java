@@ -1,6 +1,7 @@
 package it.unical.acr.qasp;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -53,6 +54,14 @@ public class LParseProgram {
 
 		return sb.toString();
 		
+	}
+
+	public void addStrongNegationConstraints() {
+		for(String lit: literalToVar.keySet()) {
+			if(literalToVar.containsKey("-"+lit)) {
+				rules.add(new ArrayList<>(Arrays.asList(1, 1, 2, 0, literalToVar.get(lit), literalToVar.get("-"+lit))));
+			}
+		}
 	}
 
 }
