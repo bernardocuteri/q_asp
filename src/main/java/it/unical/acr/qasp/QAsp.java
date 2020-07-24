@@ -95,10 +95,11 @@ public class QAsp implements Callable<Integer> {
 		try {
 			p = readAspProgram(filename);
 		} catch (FileNotFoundException e) {
-			LOGGER.severe("Unable to find file " + filename);
+			System.err.println("Unable to find file " + filename);
+			LOGGER.severe(e.toString());
 			System.exit(-1);
 		} catch (ParseException e) {
-			LOGGER.severe("Unable to parse file " + filename);
+			System.err.println("Unable to parse file " + filename);
 			LOGGER.severe(e.toString());
 			System.exit(-1);
 		}
