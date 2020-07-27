@@ -45,15 +45,11 @@
 			<groupId>dlv-wrapper</groupId>
 			<artifactId>dlv-wrapper</artifactId>
 			<version>4.2</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/libs/DLVwrapper-v4.2.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>mat-unical</groupId>
-			<artifactId>program-generator</artifactId>
+			<artifactId>random-qbf-generator</artifactId>
 			<version>1.0</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/libs/RandomProgramGenerator.jar</systemPath>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/info.picocli/picocli -->
 		<dependency>
@@ -69,6 +65,11 @@
 			<scope>test</scope>
 		</dependency>
 
-
 	</dependencies>
+	<repositories>
+    <repository>
+        <id>localrepository</id>
+        <url>file://${project.basedir}/src/main/resources/libs/</url>
+    </repository>
+</repositories>
 </project>
