@@ -23,7 +23,7 @@
 					<descriptorRefs>
 						<descriptorRef>jar-with-dependencies</descriptorRef>
 					</descriptorRefs>
-					<finalName>qasp-0.1</finalName>  
+					<finalName>qasp-0.1</finalName>
 					<appendAssemblyId>false</appendAssemblyId>
 					<outputDirectory>.</outputDirectory>
 				</configuration>
@@ -45,6 +45,15 @@
 			<groupId>dlv-wrapper</groupId>
 			<artifactId>dlv-wrapper</artifactId>
 			<version>4.2</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/libs/DLVwrapper-v4.2.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>mat-unical</groupId>
+			<artifactId>program-generator</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/libs/RandomProgramGenerator.jar</systemPath>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/info.picocli/picocli -->
 		<dependency>
@@ -52,6 +61,14 @@
 			<artifactId>picocli</artifactId>
 			<version>4.2.0</version>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/junit/junit -->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
+			<scope>test</scope>
+		</dependency>
+
 
 	</dependencies>
 </project>
