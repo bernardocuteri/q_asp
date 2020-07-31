@@ -4,7 +4,7 @@ mvn install:install-file \
    -DartifactId=dlv-wrapper \
    -Dversion=4.2 \
    -Dpackaging=jar \
-   -DlocalRepositoryPath=. \
+   -DlocalRepositoryPath=./repo \
    -DgeneratePom=true
 
 mvn install:install-file \
@@ -13,5 +13,5 @@ mvn install:install-file \
    -DartifactId=random-qbf-generator \
    -Dversion=1.0 \
    -Dpackaging=jar \
-   -DlocalRepositoryPath=. \
+   -DlocalRepositoryPath=./repo \
    -DgeneratePom=true

@@ -1,12 +1,10 @@
 package it.unical.acr.qasp;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -14,10 +12,13 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
@@ -27,6 +28,7 @@ import java.util.zip.ZipFile;
 public class Utilities {
 
 	private static final Logger LOGGER = Logger.getLogger(Utilities.class.getName());
+	private static final HashSet<Integer> ERROR_CODES = new HashSet<>(Arrays.asList(255));
 
 	public static String runAndGetString(String command) {
 
@@ -71,13 +73,27 @@ public class Utilities {
 				}
 //				System.out.println(
 //						"Failed to execute the following command: " +  commandString + " due to the following error(s):");
+				
+				boolean fail = ERROR_CODES.contains(exitVal);
+				if(fail) {
+					System.out.println("Failed to execute the following command: " +  commandString + " due to the following error(s):");
+				}
 				LOGGER.log(QAsp.DEBUG_LEVEL, "Command: " + commandString + " returned code " + exitVal);
 				try (final BufferedReader b = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
 					String errLine;
-					if ((errLine = b.readLine()) != null)
+					if ((errLine = b.readLine()) != null) {
 						LOGGER.log(QAsp.DEBUG_LEVEL, errLine);
+						if(fail) {
+							System.err.println(errLine);
+						}
+						
+					}
 				} catch (final IOException e) {
 					e.printStackTrace();
+					System.exit(-1);
+				}
+				//lp2lp error code
+				if(fail) {
 					System.exit(-1);
 				}
 
@@ -93,25 +109,24 @@ public class Utilities {
 		return null;
 
 	}
-	
+
 	public static String getCommand(ShellCommand shellCommand) {
-		return String.format(shellCommand.getCommandTemplate(), Arrays.asList(shellCommand.getBinaries()));		
+		return String.format(shellCommand.getCommandTemplate(), Arrays.asList(shellCommand.getBinaries()));
 	}
-	
-	public static List<String> executeBinaries(ShellCommand shellCommand, String ... files) {
+
+	public static List<String> executeBinaries(ShellCommand shellCommand, String... files) {
 		String command = shellCommand.getCommandTemplate();
-		for(String file: files) 
-		{
+		for (String file : files) {
 			command = command.replace(ShellCommand.FILE, file);
 		}
 		return executeBinaries(command, shellCommand.getBinaries());
 	}
 
-	public static List<String> executeBinaries(String commandTemplate, String... binaries) {		 
+	public static List<String> executeBinaries(String commandTemplate, String... binaries) {
 		List<File> resolvedBinaries = new ArrayList<>();
-		for (String binary : binaries) {			
+		for (String binary : binaries) {
 			try {
-				URI jarURI = getJarURI(); 
+				URI jarURI = getJarURI();
 				URI exe = getFile(jarURI, binary);
 				File exeFile = new File(exe);
 				exeFile.setExecutable(true);
@@ -132,17 +147,35 @@ public class Utilities {
 
 	}
 
-	public static File writeToTempFile(String text) {
+	public static File getTempFile() {
 		File tempFile = null;
 		try {
 			tempFile = File.createTempFile("tempfile", ".tmp");
 
 			tempFile.deleteOnExit();
-			BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile));
-			bw.write(text);
-			bw.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return tempFile;
+	}
+
+	public static File writeToTempFile(String text) {
+
+		File tempFile = getTempFile();
+		try {
+			Files.write(tempFile.toPath(), text.getBytes());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return tempFile;
+	}
+
+	public static File writeToTempFile(List<String> text) {
+
+		File tempFile = getTempFile();
+		try {
+			Files.write(tempFile.toPath(), text, StandardCharsets.UTF_8);
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		return tempFile;
@@ -230,6 +263,28 @@ public class Utilities {
 				ex.printStackTrace();
 			}
 		}
+	}
+	
+	public static List<String> generateRandomQDimacsInstance() {
+		//"%s -c 1600 -b 5 -bs 10 -bs 5 -bs 15 -bs 10 -bs 25 -bc 3 -bc 3 -bc 2 -bc 2 -bc 1"
+		ShellCommand blocksqbfCommand = new ShellCommand("%s", new String[] {"./blocksqbf"});
+		List<String> qdimacs = Utilities.executeBinaries(blocksqbfCommand);		
+		return qdimacs;
+	}
+
+	public static boolean caqe(File inputFile) {
+		ShellCommand caqeCommand = new ShellCommand("%s $file", new String[] {"./caqe"});
+		List<String> caqeResult = Utilities.executeBinaries(caqeCommand,inputFile.toString());
+		return caqeResult.get(caqeResult.size()-1).equals("c Satisfiable");
+	}
+
+	public static QDimacsProgram parseQDimacs(List<String> randomQDimacs) {
+		QDimacsProgramBuilder builder = new QDimacsProgramBuilder();
+		for(String line:randomQDimacs) {
+			builder.addRow(line);
+		}		
+		return builder.getProgram();
+		
 	}
 
 }

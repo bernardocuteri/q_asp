@@ -40,7 +40,7 @@ public class QAspResult {
 	public void setQcirAssignments(List<List<String>> qcirAssignments) {
 		this.qcirAssignments = qcirAssignments;
 	}
-
+	
 	@Override
 	public String toString() {
 		StringBuilder res = new StringBuilder();

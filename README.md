@@ -24,3 +24,4 @@ Check *example.asp*
 
 Import as existing Maven project
 
+Deploy local jars by executing src/main/resources/libs/toLocalMavenRepo.sh

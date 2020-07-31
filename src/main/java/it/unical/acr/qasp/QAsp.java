@@ -41,25 +41,29 @@ public class QAsp implements Callable<Integer> {
 	public final static QCIRFormatType QCIR_FORMAT = QCIRFormatType.CLEANSED;
 	public final static ShellCommand QCIR_SOLVER = QUABS_COMMAND_TEMPLATE;
 	private static final Logger LOGGER = Logger.getLogger(QAsp.class.getName());
-	public static final Level DEBUG_LEVEL = Level.INFO;
+	public static Level DEBUG_LEVEL = Level.INFO;
 
-	@Parameters(index = "0", description = "ASP(Q) input file")
-	private File inputFile;
+	@Parameters(paramLabel = "FILE [FILE, ..]", arity = "1..*", description = "ASP(Q) input files (at least one is required)")
+	private File[] inputFiles;
 
-//    @Option(names = { "-m", "--get-models" }, description = "Print models of the most external quantified program.")
-//    private boolean printExistentialModels;
+	@Option(names = { "-f",
+			"--filter" }, description = "comma separated list of predicates to print in models (e.g. edge,node)")
+	private String filter = "";
+
+	@Option(names = { "-m", "--get-models" }, description = "Print all models of the most external quantified program.")
+	private boolean printExistentialModels = false;
 
 	@Option(names = { "-n",
 			"--n-models" }, description = "Number of models of the most external quantified program, if existentially quantified. (default = 0, -1 to get all models).")
 	private int numberOfModels = 0;
 
 	public Integer call() {
-		if (!inputFile.exists()) {
-			throw new IllegalArgumentException("Input file does not exists " + inputFile);
+		for(File inputFile: inputFiles) {
+			if (!inputFile.exists()) {
+				throw new IllegalArgumentException("Input file does not exists " + inputFile);
+			}
 		}
-		QAspResult result = solve(inputFile);
-
-		System.out.println(result);
+		solve();
 		return 0;
 	}
 
@@ -67,6 +71,20 @@ public class QAsp implements Callable<Integer> {
 		int exitCode = new CommandLine(new QAsp()).execute(args);
 		System.exit(exitCode);
 	}
+
+	public File[] getInputFiles() {
+		return inputFiles;
+	}
+
+	public void setInputFiles(File[] inputFiles) {
+		this.inputFiles = inputFiles;
+	}
+	
+
+	public void setInputFile(File file) {
+		this.inputFiles = new File[] {file};		
+	}
+
 
 	public List<String> ground(String program) {
 
@@ -76,30 +94,33 @@ public class QAsp implements Callable<Integer> {
 		File tempFile = Utilities.writeToTempFile(program);
 		// Run a shell command
 		String command = "%s --output=SMODELS " + tempFile;
-		return Utilities.executeBinaries(command, "gringo");
+		List<String> res = Utilities.executeBinaries(command, "gringo");
+		tempFile.delete();
+		return res;
 	}
 
-	private Program readAspProgram(File file) throws FileNotFoundException, ParseException {
-		FileInputStream fis = new FileInputStream(file);
-		Director d = new Director(fis);
+	private Program readAspProgram(File [] files) throws FileNotFoundException, ParseException {
 		Builder b = new SimpleProgramBuilder();
-		d.configureBuilder(b);
-		d.start();
-		Program p = (Program) b.getProductHandler();
-		return p;
+		for(File file: files) {
+			FileInputStream fis = new FileInputStream(file);
+			Director d = new Director(fis);
+			d.configureBuilder(b);
+			d.start();
+		}
+		return (Program) b.getProductHandler();
 	}
 
-	public QuantifiedProgram readQuantifiedProgram(File filename) {
+	public AspQProgram readQuantifiedProgram(File [] filenames) {
 
 		Program p = null;
 		try {
-			p = readAspProgram(filename);
+			p = readAspProgram(filenames);
 		} catch (FileNotFoundException e) {
-			System.err.println("Unable to find file " + filename);
+			System.err.println("Unable to find input file(s)");
 			LOGGER.severe(e.toString());
 			System.exit(-1);
 		} catch (ParseException e) {
-			System.err.println("Unable to parse file " + filename);
+			System.err.println("Unable to parse input file(s)");
 			System.err.println(e.toString());
 			LOGGER.severe(e.toString());
 			System.exit(-1);
@@ -126,7 +147,7 @@ public class QAsp implements Callable<Integer> {
 				programs.get(programs.size() - 1).add(p.get(i));
 			}
 		}
-		return new QuantifiedProgram(programs, quantifiers);
+		return new AspQProgram(programs, quantifiers);
 
 	}
 
@@ -134,15 +155,33 @@ public class QAsp implements Callable<Integer> {
 		return FORALL + ", " + EXISTS + ", or " + CONSTRAINT;
 	}
 
-	private QAspResult solve(File programFile) {
-		QuantifiedProgram qp = readQuantifiedProgram(programFile);
-		
-		if(qp.getQuantifiers().get(0).equals(FORALL))
-		{
-			if(numberOfModels!=0) {
-				System.out.println("Warning: ignoring argument number of models (n) since the most external program is universally quantified");
+	public QAspResult solve() {
+		AspQProgram qp = readQuantifiedProgram(inputFiles);
+		return solve(qp);
+
+	}
+
+	public QAspResult solve(AspQProgram qp) {
+
+		if (qp.getQuantifiers().get(0).equals(FORALL)) {
+			if (numberOfModels != 0) {
+				System.out.println(
+						"Warning: ignoring argument number of models (-n, --n-models) since the most external program is universally quantified");
+			}
+			if (printExistentialModels) {
+				System.out.println(
+						"Warning: ignoring arguments -m --get-models since the most external program is universally quantified");
+			}
+			// TODO handle case (-n 0 -m)
+			if (numberOfModels > 0 && printExistentialModels) {
+				System.out.println(
+						"Warning: ignoring arguments -m --get-models since a specific number of models has been specified (-n, --n-models)");
+				printExistentialModels = false;
 			}
 			numberOfModels = 0;
+		}
+		if (printExistentialModels) {
+			numberOfModels = -1;
 		}
 
 		Set<String> predicates = new HashSet<>();
@@ -208,8 +247,9 @@ public class QAsp implements Callable<Integer> {
 			// update qcir program
 			formulas.add(updateQcirProgram(qcirPB, allVars, i, quantifier, cnfProgram));
 		}
-		if(!qp.getQuantifiers().get(qp.getQuantifiers().size()-1).equals(CONSTRAINT)) {
-			System.err.println("Invalid input: the last quantifier must be "+CONSTRAINT+". Note that the constraint program can be empty though.");
+		if (!qp.getQuantifiers().get(qp.getQuantifiers().size() - 1).equals(CONSTRAINT)) {
+			System.err.println("Invalid input: the last quantifier must be " + CONSTRAINT
+					+ ". Note that the constraint program can be empty though.");
 			System.exit(-1);
 		}
 		// merge formulas together
@@ -266,7 +306,9 @@ public class QAsp implements Callable<Integer> {
 
 	private List<String> solveQCIRProgram(QCIRProgram qcirProgram) {
 		File tempFile = writeQcirToTempFile(qcirProgram);
-		return Utilities.executeBinaries(QCIR_SOLVER, tempFile.toString());
+		List<String> res = Utilities.executeBinaries(QCIR_SOLVER, tempFile.toString());
+		tempFile.delete();
+		return res;
 	}
 
 	private QAspResult quabsOutputToRes(List<String> output, Map<Integer, String> var2atom,
@@ -286,37 +328,86 @@ public class QAsp implements Callable<Integer> {
 					if (var != null && var > 0 && var2atom.get(var) != null) {
 						String atom = var2atom.get(var);
 						qaspAssignment.add(atom);
-						//correct?
-						qcirAssignment.add(qcirLit+"");
+						// correct?
+						qcirAssignment.add(qcirLit + "");
 					}
 				}
 			}
-			
+
 			res.addQaspAssignment(qaspAssignment);
 			res.addQcirAssignment(qcirAssignment);
 		}
 		return res;
 	}
 
-	private QAspResult solveQCIRProgram(QCIRProgram qcirProgram, QCIRProgramBuilder qcirPB, Map<Integer, String> var2atom,
-			Map<Integer, Integer> qcirToDimacs) {
+	public static boolean solveQcirProgram(File inputFile) {
+		List<String> output = Utilities.executeBinaries(QCIR_SOLVER, inputFile.toString());
+		if (QCIR_SOLVER == RARE_QS_COMMAND_TEMPLATE) {
+			String lastLine = output.get(output.size() - 1);
+			int result = Integer.parseInt(lastLine.substring(lastLine.length() - 1));
+			return result == 1;
+		} else if (QCIR_SOLVER == QUABS_COMMAND_TEMPLATE) {
+			String lastLine = output.get(output.size() - 1);
+			return lastLine.split(" ")[1].equals("SAT");
+		}
+		throw new IllegalArgumentException("Invalid solver " + Utilities.getCommand(QCIR_SOLVER));
+	}
+
+	private void printSat(boolean sat) {
+		System.out.println(sat ? "SAT" : "UNSAT");
+	}
+
+	private void printAssignment(List<String> qaspAssignment, HashSet<String> splittedFilter) {
+		StringBuilder res = new StringBuilder();
+		res.append("{");
+		for (String atom : qaspAssignment) {			
+			int parIndex = atom.indexOf("(");
+			String predicate = atom.substring(0, parIndex != -1 ? parIndex : atom.length());
+			if (splittedFilter.isEmpty() || splittedFilter.contains(predicate)) {
+				if (res.length() > 1) {
+					res.append(", ");
+				}
+				res.append(atom);
+			}
+		}
+		res.append("}\n");
+		System.out.print(res);
+	}
+
+	private QAspResult solveQCIRProgram(QCIRProgram qcirProgram, QCIRProgramBuilder qcirPB,
+			Map<Integer, String> var2atom, Map<Integer, Integer> qcirToDimacs) {
 
 		List<String> output = solveQCIRProgram(qcirProgram);
 		if (QCIR_SOLVER == RARE_QS_COMMAND_TEMPLATE) {
 			String lastLine = output.get(output.size() - 1);
 			int result = Integer.parseInt(lastLine.substring(lastLine.length() - 1));
-			return new QAspResult(result == 1);
+			boolean sat = result == 1;
+			printSat(sat);
+			return new QAspResult(sat);
 		} else if (QCIR_SOLVER == QUABS_COMMAND_TEMPLATE) {
 			QAspResult currentRes = quabsOutputToRes(output, var2atom, qcirToDimacs);
+			printSat(currentRes.isSat());
 			if (!currentRes.isSat()) {
 				return new QAspResult(currentRes.isSat());
+			}
+			HashSet<String> splittedFilter = new HashSet<>();
+			if(!filter.equals("")) {
+				splittedFilter.addAll(Arrays.asList(filter.split(",")));
+			}
+			if (numberOfModels != 0) {
+				System.out.println("Outermost existential models:");
 			}
 			QAspResult res = new QAspResult(currentRes.isSat());
 			int models = 0;
 			while (currentRes.isSat() && (models < numberOfModels || numberOfModels == -1)) {
 
+				if(currentRes.getQaspAssignments().isEmpty()) {
+					System.out.println("No assignments available (quabs returned no assignment)");
+					break;
+				}
 				List<String> qaspAssignment = currentRes.getQaspAssignments().get(0);
 				res.addQaspAssignment(new ArrayList<>(qaspAssignment));
+				printAssignment(qaspAssignment, splittedFilter);
 				// add constraint to change model
 				qcirPB.addAssignmentConstraint(currentRes.getQcirAssignments().get(0));
 				currentRes = quabsOutputToRes(solveQCIRProgram(qcirProgram), var2atom, qcirToDimacs);
@@ -375,6 +466,7 @@ public class QAsp implements Callable<Integer> {
 		String command = "cat " + tempFile + " | %s | %s | %s | %s";
 		List<String> satProgram = Utilities.executeBinaries(command, "lpshift-1.4", "lp2normal-2.27", "lp2lp2-1.23",
 				"lp2sat-1.24");
+		tempFile.delete();
 		CNFProgramBuilder builder = new CNFProgramBuilder();
 		LOGGER.log(DEBUG_LEVEL, "sat formula");
 		for (String s : satProgram) {
@@ -393,4 +485,5 @@ public class QAsp implements Callable<Integer> {
 		}
 		return lppb.getProgram();
 	}
+
 }
