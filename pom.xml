@@ -46,7 +46,7 @@
 		<dependency>
 			<groupId>dlv-wrapper</groupId>
 			<artifactId>dlv-wrapper</artifactId>
-			<version>4.2</version>
+			<version>4.20</version>
 		</dependency>
 		<dependency>
 			<groupId>mat-unical</groupId>
@@ -71,7 +71,7 @@
 	<repositories>
 		<repository>
 			<id>localrepository</id>
-			<url>file://${project.basedir}/src/main/resources/libs/</url>
+			<url>file://${project.basedir}/src/main/resources/libs/repo</url>
 		</repository>
 	</repositories>
 </project>

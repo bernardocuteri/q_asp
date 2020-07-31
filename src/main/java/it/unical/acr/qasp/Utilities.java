@@ -73,27 +73,28 @@ public class Utilities {
 				}
 //				System.out.println(
 //						"Failed to execute the following command: " +  commandString + " due to the following error(s):");
-				
+
 				boolean fail = ERROR_CODES.contains(exitVal);
-				if(fail) {
-					System.out.println("Failed to execute the following command: " +  commandString + " due to the following error(s):");
+				if (fail) {
+					System.out.println("Failed to execute the following command: " + commandString
+							+ " due to the following error(s):");
 				}
 				LOGGER.log(QAsp.DEBUG_LEVEL, "Command: " + commandString + " returned code " + exitVal);
 				try (final BufferedReader b = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
 					String errLine;
 					if ((errLine = b.readLine()) != null) {
 						LOGGER.log(QAsp.DEBUG_LEVEL, errLine);
-						if(fail) {
+						if (fail) {
 							System.err.println(errLine);
 						}
-						
+
 					}
 				} catch (final IOException e) {
 					e.printStackTrace();
 					System.exit(-1);
 				}
-				//lp2lp error code
-				if(fail) {
+				// lp2lp error code
+				if (fail) {
 					System.exit(-1);
 				}
 
@@ -133,14 +134,14 @@ public class Utilities {
 				resolvedBinaries.add(exeFile);
 
 			} catch (ZipException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
+				System.exit(-1);
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
+				System.exit(-1);
 			} catch (URISyntaxException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
+				System.exit(-1);
 			}
 		}
 		return runAndGetList(String.format(commandTemplate, resolvedBinaries.toArray()));
@@ -201,14 +202,17 @@ public class Utilities {
 
 		location = new File(where);
 
-		// not in a JAR, just return the path on disk
+		File tentativeFilePath = new File("./target/classes/" + fileName);
 		if (location.isDirectory()) {
+			// not in a JAR, just return the path on disk
 			fileURI = URI.create(where.toString() + fileName);
-		} else {
+		} else if (tentativeFilePath.exists()) {
+			// JAR, but the file exists
+			fileURI = tentativeFilePath.toURI();
+		} else {			
+			// JAR, and need to extract file
 			final ZipFile zipFile;
-
 			zipFile = new ZipFile(location);
-
 			try {
 				fileURI = extract(zipFile, fileName);
 			} finally {
@@ -251,7 +255,7 @@ public class Utilities {
 			close(zipStream);
 			close(fileStream);
 		}
-
+		System.out.println("extracted "+tempFile.toURI());
 		return (tempFile.toURI());
 	}
 
@@ -264,27 +268,27 @@ public class Utilities {
 			}
 		}
 	}
-	
+
 	public static List<String> generateRandomQDimacsInstance() {
-		//"%s -c 1600 -b 5 -bs 10 -bs 5 -bs 15 -bs 10 -bs 25 -bc 3 -bc 3 -bc 2 -bc 2 -bc 1"
-		ShellCommand blocksqbfCommand = new ShellCommand("%s", new String[] {"./blocksqbf"});
-		List<String> qdimacs = Utilities.executeBinaries(blocksqbfCommand);		
+		// "%s -c 1600 -b 5 -bs 10 -bs 5 -bs 15 -bs 10 -bs 25 -bc 3 -bc 3 -bc 2 -bc 2-bc 1"
+		ShellCommand blocksqbfCommand = new ShellCommand("%s", new String[] { "./blocksqbf" });
+		List<String> qdimacs = Utilities.executeBinaries(blocksqbfCommand);
 		return qdimacs;
 	}
 
 	public static boolean caqe(File inputFile) {
-		ShellCommand caqeCommand = new ShellCommand("%s $file", new String[] {"./caqe"});
-		List<String> caqeResult = Utilities.executeBinaries(caqeCommand,inputFile.toString());
-		return caqeResult.get(caqeResult.size()-1).equals("c Satisfiable");
+		ShellCommand caqeCommand = new ShellCommand("%s $file", new String[] { "./caqe" });
+		List<String> caqeResult = Utilities.executeBinaries(caqeCommand, inputFile.toString());
+		return caqeResult.get(caqeResult.size() - 1).equals("c Satisfiable");
 	}
 
 	public static QDimacsProgram parseQDimacs(List<String> randomQDimacs) {
 		QDimacsProgramBuilder builder = new QDimacsProgramBuilder();
-		for(String line:randomQDimacs) {
+		for (String line : randomQDimacs) {
 			builder.addRow(line);
-		}		
+		}
 		return builder.getProgram();
-		
+
 	}
 
 }

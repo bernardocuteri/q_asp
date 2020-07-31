@@ -15,13 +15,16 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import it.unical.acr.qasp.QCIRProgram.QCIRFormatType;
-import it.unical.mat.dlv.parser.Builder;
-import it.unical.mat.dlv.parser.Director;
-import it.unical.mat.dlv.parser.ParseException;
+import it.unical.mat.aspcore2.parser.AspCore2Parser;
+import it.unical.mat.aspcore2.parser.ParseException;
+import it.unical.mat.aspcore2.program.AspCore2Builder;
+import it.unical.mat.aspcore2.program.AspCore2ProgramBuilder;
+import it.unical.mat.aspcore2.program.Choice;
+import it.unical.mat.aspcore2.program.ChoiceElement;
+import it.unical.mat.aspcore2.program.ChoiceRule;
 import it.unical.mat.dlv.program.Comment;
 import it.unical.mat.dlv.program.Program;
 import it.unical.mat.dlv.program.ProgramPredicate;
-import it.unical.mat.dlv.program.SimpleProgramBuilder;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -60,7 +63,8 @@ public class QAsp implements Callable<Integer> {
 	public Integer call() {
 		for(File inputFile: inputFiles) {
 			if (!inputFile.exists()) {
-				throw new IllegalArgumentException("Input file does not exists " + inputFile);
+				System.out.println("Input file does not exists " + inputFile);
+				System.exit(-1);
 			}
 		}
 		solve();
@@ -98,16 +102,23 @@ public class QAsp implements Callable<Integer> {
 		tempFile.delete();
 		return res;
 	}
+	
+	
 
+	private void addFileToProgram(AspCore2Builder builder, File file) throws FileNotFoundException, ParseException {
+		FileInputStream fis = new FileInputStream(file);
+		AspCore2Parser director = new AspCore2Parser(fis);
+		director.configureBuilder(builder);
+		director.start();
+	}
+	
 	private Program readAspProgram(File [] files) throws FileNotFoundException, ParseException {
-		Builder b = new SimpleProgramBuilder();
+		
+		AspCore2Builder builder=new AspCore2ProgramBuilder();
 		for(File file: files) {
-			FileInputStream fis = new FileInputStream(file);
-			Director d = new Director(fis);
-			d.configureBuilder(b);
-			d.start();
+			addFileToProgram(builder, file);
 		}
-		return (Program) b.getProductHandler();
+		return (Program) builder.getProductHandler();
 	}
 
 	public AspQProgram readQuantifiedProgram(File [] filenames) {
@@ -243,7 +254,16 @@ public class QAsp implements Callable<Integer> {
 			for (ProgramPredicate pred : current.getPredicatesInHead()) {
 				predicates.add(pred.getName());
 			}
-
+			for(int r = 0; r < current.size();r++) {
+				if(current.get(r) instanceof ChoiceRule) {
+					Choice choice = ((ChoiceRule) current.get(r)).getChoice();
+					for(ChoiceElement e: choice.getElements()) {
+						predicates.add(e.getAtom().getName());
+					}
+				}
+			}
+ 
+				
 			// update qcir program
 			formulas.add(updateQcirProgram(qcirPB, allVars, i, quantifier, cnfProgram));
 		}
@@ -269,7 +289,9 @@ public class QAsp implements Callable<Integer> {
 		qcirPB.setOutput(previous);
 
 		LOGGER.log(DEBUG_LEVEL, "\n" + qcirPB.getProgramString());
-		return solveQCIRProgram(qcirPB.getProgram(), qcirPB, var2atom, qcirPB.litToVar);
+		//System.out.println(qcirPB.getProgramString());
+		QAspResult res = solveQCIRProgram(qcirPB.getProgram(), qcirPB, var2atom, qcirPB.litToVar);		
+		return res;
 	}
 
 	private String updateQcirProgram(QCIRProgramBuilder qcirPB, Set<Integer> allVars, int i, String quantifier,

@@ -1,32 +1,42 @@
 package it.unical.acr.qasp;
 
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import java.io.FileNotFoundException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 
-import it.unical.mat.dlv.parser.Builder;
-import it.unical.mat.dlv.parser.Director;
-import it.unical.mat.dlv.parser.ParseException;
+import it.unical.mat.aspcore2.parser.AspCore2Parser;
+import it.unical.mat.aspcore2.parser.ParseException;
+import it.unical.mat.aspcore2.program.AspCore2Builder;
+import it.unical.mat.aspcore2.program.AspCore2ProgramBuilder;
 import it.unical.mat.dlv.program.Program;
-import it.unical.mat.dlv.program.SimpleProgramBuilder;
 
 public class Conversions {
-
-	public static Program stringToProgram(String program) {
-		InputStream stream = new ByteArrayInputStream(program.toString().getBytes(StandardCharsets.UTF_8));
-		Director d = new Director(stream);
-		Builder b = new SimpleProgramBuilder();
-		d.configureBuilder(b);
-		try {
-			d.start();
-		} catch (ParseException e) {
-			e.printStackTrace();
-		}
-		return (Program) b.getProductHandler();
+	
+	private static void addStringToProgram(AspCore2Builder builder, String p) throws FileNotFoundException, ParseException, UnsupportedEncodingException {
+		AspCore2Parser director = new AspCore2Parser(new ByteArrayInputStream(p.getBytes("UTF-8")));
+		director.configureBuilder(builder);
+		director.start();
 	}
 
-	public static AspQProgram qDimacsToAspQ(QDimacsProgram input) {
+	public static Program stringToProgram(String program) {
+		AspCore2Builder builder = new AspCore2ProgramBuilder();
+		try {
+			addStringToProgram(builder, program);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			System.exit(-1);
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+			System.exit(-1);
+		} catch (ParseException e) {
+			e.printStackTrace();
+			System.exit(-1);
+		}		
+		return (Program) builder.getProductHandler();
+	}
+
+	public static AspQProgram qDimacsToAspQ(QDimacsProgram input, boolean useChoiceRules) {
 		AspQProgram res = new AspQProgram();
 
 		for (int i = 0; i < input.getQuantifiers().size(); i++) {
@@ -36,8 +46,19 @@ public class Conversions {
 			res.quantifiers.add(quantifier.equals("a") ? QAsp.FORALL : QAsp.EXISTS);
 
 			StringBuilder choices = new StringBuilder();
-			for (int q : quantifiedLayer) {
-				choices.append("x_" + q + " | nx_" + q + ".");
+			if(!useChoiceRules) {
+				for (int q : quantifiedLayer) {
+					choices.append("x_" + q + " | nx_" + q + ".");
+				}
+			} else {
+				choices.append("{");
+				for (int j=0;j<quantifiedLayer.size();j++) {
+					if(j>0) {
+						choices.append(";");
+					}
+					choices.append("x_" + quantifiedLayer.get(j));
+				}
+				choices.append("}.");
 			}
 			res.getPrograms().add(stringToProgram(choices.toString()));
 		}

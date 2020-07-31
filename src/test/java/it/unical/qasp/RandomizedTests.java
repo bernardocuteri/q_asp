@@ -63,7 +63,9 @@ public class RandomizedTests {
 		QAsp.DEBUG_LEVEL = Level.FINEST;
 		List<String> randomQDimacs = Utilities.generateRandomQDimacsInstance();
 		
-		
+		for(String s: randomQDimacs) {
+			System.out.println(s);
+		}
 		File randomQDimacsFile = Utilities.writeToTempFile(randomQDimacs);
 		long start = System.nanoTime();
 		boolean caqeResult = Utilities.caqe(randomQDimacsFile);		
@@ -71,8 +73,8 @@ public class RandomizedTests {
 		long caqeElapsed = System.nanoTime() - start;
 		
 		QDimacsProgram qDimacsProgram = Utilities.parseQDimacs(randomQDimacs);
-		AspQProgram program = Conversions.qDimacsToAspQ(qDimacsProgram);
-		
+		AspQProgram program = Conversions.qDimacsToAspQ(qDimacsProgram, true);
+		System.out.println(program);
 		start = System.nanoTime();
 		QAspResult qAspREsult = new QAsp().solve(program);
 		long qAspElapsed = System.nanoTime() - start;
@@ -95,7 +97,7 @@ public class RandomizedTests {
 		}		
 	}
 	
-	@Test
+	//@Test
 	public void parallelRandomTests() {
 		int paralleFactor = 1;//Math.min(10, Runtime.getRuntime().availableProcessors()/2);
 		IntStream stream = IntStream.range(0, paralleFactor);
