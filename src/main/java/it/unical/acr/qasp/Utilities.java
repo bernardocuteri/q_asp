@@ -235,7 +235,7 @@ public class Utilities {
 			close(zipStream);
 			close(fileStream);
 		}
-		System.out.println("extracted " + tempFile.toURI());
+		//System.out.println("extracted " + tempFile.toURI());
 		return (tempFile.toURI());
 	}
 
