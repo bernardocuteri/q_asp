@@ -9,6 +9,7 @@ import it.unical.mat.aspcore2.parser.AspCore2Parser;
 import it.unical.mat.aspcore2.parser.ParseException;
 import it.unical.mat.aspcore2.program.AspCore2Builder;
 import it.unical.mat.aspcore2.program.AspCore2ProgramBuilder;
+import it.unical.mat.dlv.program.Expression;
 import it.unical.mat.dlv.program.Program;
 
 public class Conversions {
@@ -35,6 +36,8 @@ public class Conversions {
 		}		
 		return (Program) builder.getProductHandler();
 	}
+	
+	static boolean mergeExistsConstraint = true;
 
 	public static AspQProgram qDimacsToAspQ(QDimacsProgram input, boolean useChoiceRules) {
 		AspQProgram res = new AspQProgram();
@@ -62,7 +65,10 @@ public class Conversions {
 			}
 			res.getPrograms().add(stringToProgram(choices.toString()));
 		}
-		res.quantifiers.add(QAsp.CONSTRAINT);
+		boolean mergingExists = mergeExistsConstraint && res.quantifiers.get(res.quantifiers.size()-1) == QAsp.EXISTS;
+		if(!mergingExists) {
+			res.quantifiers.add(QAsp.CONSTRAINT);
+		} 
 		StringBuilder clauses = new StringBuilder();
 		for (ArrayList<Integer> clause : input.getClauses()) {
 			clauses.append(":-");
@@ -76,6 +82,15 @@ public class Conversions {
 			clauses.append(".\n");
 		}
 		res.getPrograms().add(stringToProgram(clauses.toString()));
+		
+		if(mergingExists) {
+			int lastIndex = res.programs.size()-1;
+			for(Expression ex: res.programs.get(lastIndex)) {
+				res.getPrograms().get(lastIndex-1).add(ex);
+			}
+			res.programs.remove(lastIndex);
+			res.quantifiers.set(lastIndex-1, QAsp.CONSTRAINT);
+		}
 		return res;
 
 	}

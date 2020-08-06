@@ -3,6 +3,7 @@ package it.unical.qasp;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -12,6 +13,7 @@ import java.util.stream.IntStream;
 import org.junit.Test;
 
 import it.unical.acr.qasp.AspQProgram;
+import it.unical.acr.qasp.CommandExecutionException;
 import it.unical.acr.qasp.Conversions;
 import it.unical.acr.qasp.QAsp;
 import it.unical.acr.qasp.QAspResult;
@@ -41,7 +43,7 @@ public class RandomizedTests {
 		QAsp solver = new QAsp();		
 		solver.setInputFile(new File("temp/random.asp.aspq"));
 		boolean aspqResult = solver.solve().isSat();
-		boolean qcirResult = QAsp.solveQcirProgram(new File("temp/random.asp.qcir"));
+		boolean qcirResult = solver.solveQcirProgram(new File("temp/random.asp.qcir"));
 		System.out.println(aspqResult ? "SAT" : "UNSAT"); 
 		assertEquals(qcirResult, aspqResult);		
 	}
@@ -59,13 +61,12 @@ public class RandomizedTests {
 		}
 	}
 	
-	public void randomTestWithBlocksqbf(TestResults res, boolean stopOnFail) {
+	public void randomTestWithBlocksqbf(TestResults res, boolean stopOnFail) throws CommandExecutionException, IOException, InterruptedException {
 		QAsp.DEBUG_LEVEL = Level.FINEST;
-		List<String> randomQDimacs = Utilities.generateRandomQDimacsInstance();
-		
-		for(String s: randomQDimacs) {
-			System.out.println(s);
-		}
+		List<String> randomQDimacs = Utilities.generateRandomQDimacsInstance();		
+//		for(String s: randomQDimacs) {
+//			System.out.println(s);
+//		}
 		File randomQDimacsFile = Utilities.writeToTempFile(randomQDimacs);
 		long start = System.nanoTime();
 		boolean caqeResult = Utilities.caqe(randomQDimacsFile);		
@@ -74,7 +75,7 @@ public class RandomizedTests {
 		
 		QDimacsProgram qDimacsProgram = Utilities.parseQDimacs(randomQDimacs);
 		AspQProgram program = Conversions.qDimacsToAspQ(qDimacsProgram, true);
-		System.out.println(program);
+		//System.out.println(program);
 		start = System.nanoTime();
 		QAspResult qAspREsult = new QAsp().solve(program);
 		long qAspElapsed = System.nanoTime() - start;
@@ -85,25 +86,31 @@ public class RandomizedTests {
 		}		
 	}
 	
-	@Test
-	public void executeSingleRandomTestsWithBlocksqbf() {
+	//@Test
+	public void executeSingleRandomTestsWithBlocksqbf() throws CommandExecutionException, IOException, InterruptedException {
 		randomTestWithBlocksqbf(new TestResults(), true);
 	}
 	
-	public void executeRandomTestsWithBlocksqbf(TestResults res) {
+	public void executeRandomTestsWithBlocksqbf(TestResults res) throws CommandExecutionException, IOException, InterruptedException {
 		
 		while(true) {
 			randomTestWithBlocksqbf(res, false);			
 		}		
 	}
 	
-	//@Test
+	@Test
 	public void parallelRandomTests() {
 		int paralleFactor = 1;//Math.min(10, Runtime.getRuntime().availableProcessors()/2);
 		IntStream stream = IntStream.range(0, paralleFactor);
 		
 		TestResults res = new TestResults();
-		stream.parallel().forEach(i -> executeRandomTestsWithBlocksqbf(res));
+		stream.parallel().forEach(i -> {
+			try {
+				executeRandomTestsWithBlocksqbf(res);
+			} catch (CommandExecutionException | IOException | InterruptedException e) {
+				System.exit(-1);
+			}
+		});
 	}
 	
 	private class TestResults {
