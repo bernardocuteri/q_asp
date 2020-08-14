@@ -51,7 +51,7 @@ public class QAsp implements Callable<Integer> {
 	public final static QCIRFormatType QCIR_FORMAT = QCIRFormatType.CLEANSED;
 	public final static ShellCommand QCIR_SOLVER = QUABS_COMMAND_TEMPLATE;
 	private static final Logger LOGGER = Logger.getLogger(QAsp.class.getName());
-	public static Level DEBUG_LEVEL = Level.FINE;
+	public static Level DEBUG_LEVEL = Level.INFO;
 
 	@Parameters(paramLabel = "FILE [FILE, ..]", arity = "1..*", description = "ASP(Q) input files (at least one is required)")
 	private File[] inputFiles;
@@ -244,6 +244,7 @@ public class QAsp implements Callable<Integer> {
 			if (printExistentialModels) {
 				System.out.println(
 						"Warning: ignoring arguments -m --get-models since the most external program is universally quantified");
+				printExistentialModels = false;
 			}
 			// TODO handle case (-n 0 -m)
 			if (numberOfModels > 0 && printExistentialModels) {
