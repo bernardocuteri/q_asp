@@ -10,6 +10,9 @@ public class LParseProgram {
 	Map<String, Integer> literalToVar = new HashMap<>();
 	Map<Integer, String> varToLiteral = new HashMap<>();
 	private ArrayList<ArrayList<Integer>> rules = new ArrayList<>();
+	private boolean disjunctiveRuleFound = false;
+	
+	public boolean isDisjunctive() { return disjunctiveRuleFound ; }
 
 	public LParseProgram() {
 		super();
@@ -24,6 +27,7 @@ public class LParseProgram {
 	}
 
 	public void addRule(ArrayList<Integer> rule) {
+		disjunctiveRuleFound |= (rule.get(0)==8);
 		rules.add(rule);
 	}
 

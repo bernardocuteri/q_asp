@@ -143,6 +143,7 @@ public class Utilities {
 
 	public static File getTempFile() throws IOException {
 		File tempFile = null;
+//		return new File("/Users/ricca/myGit/q_asp/instances/tmp.txt");
 		tempFile = File.createTempFile("tempfile", ".tmp");
 		tempFile.deleteOnExit();
 		return tempFile;

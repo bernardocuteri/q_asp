@@ -8,6 +8,7 @@ public class CNFProgram {
 
 	Map<String, Integer> literalToVar = new HashMap<>();
 	Map<Integer, String> varToLiteral = new HashMap<>();
+	
 	private ArrayList<ArrayList<Integer>> clauses = new ArrayList<>();
 
 	public Map<String, Integer> getLiteralToVar() {
